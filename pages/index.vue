@@ -71,6 +71,26 @@
     const uniqueCategories = computed(() => [...new Set(jobs.value.map(j => j.role_category))])
     const uniqueIndustries = computed(() => [...new Set(jobs.value.map(j => j.industry))])
     const uniqueStatuses = computed(() => [...new Set(jobs.value.map(j => j.application_status))])
+const statusStats = computed(() => {
+  const total = jobs.value.length
+  const counts = {
+    "In Review": 0,
+    "In Progress": 0,
+    "Refused": 0,
+    "Accepted": 0
+  }
+
+  jobs.value.forEach(job => {
+    if (counts[job.application_status] !== undefined) {
+      counts[job.application_status]++
+    }
+  })
+
+  return Object.entries(counts).map(([status, count]) => ({
+    status,
+    percent: total ? (count / total) * 100 : 0
+  }))
+})
 </script>
 
 <template>
@@ -139,7 +159,7 @@
               />
             </div>
         </template>
-        <div class="h-[calc(100vh_-8.5rem)] overflow-y-auto w-full pr-4">
+        <div class="h-[calc(100vh_-11rem)] overflow-y-auto w-full pr-4">
             
             <div v-for="job in filteredJobs" :key="job.id" class="relative flex justify-between items-center py-4 border-b border-gray-200">
                 <div class="text-text w-3/4 inline-block">
@@ -169,6 +189,24 @@
                 </div>
                 
             </div>
+        </div>
+        <div class="absolute bottom-4.5 left-4 w-[calc(100%_-_3rem)] h-7.5 flex rounded-sm overflow-hidden">
+          <div
+            v-for="stat in statusStats"
+            :key="stat.status"
+            :title="`${stat.status}: ${stat.percent.toFixed(0)}%`"
+            class="h-full transition-all duration-300 overflow-hidden"
+            :style="{
+              width: `${stat.percent}%`,
+              backgroundColor:
+                stat.status === 'Accepted' ? '#22c55e' :
+                stat.status === 'In Progress' ? '#a3e635' :
+                stat.status === 'In Review' ? '#f97316' :
+                stat.status === 'Refused' ? '#ef4444' : '#d1d5db'
+            }"
+          >
+            <p class="w-full text-center">{{ stat.percent.toFixed(0) }}%</p>
+          </div>
         </div>
     </UCard>
   </UContainer>
