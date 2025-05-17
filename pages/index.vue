@@ -40,6 +40,8 @@
         if (res.status === "ok") {
         success.value = true
         text.value = ""
+        fetchJobs()
+        } else if (res.status === "error") {
         } else {
         error.value = res.message || "Something went wrong"
         }
@@ -49,19 +51,39 @@
         loading.value = false
     }
     }
+
+    const selectedCompanies = ref([])
+    const selectedCategories = ref([])
+    const selectedIndustries = ref([])
+    const selectedStatuses = ref([])
+
+    const filteredJobs = computed(() => {
+      return jobs.value.filter(job => {
+        const companyMatch = selectedCompanies.value.length === 0 || selectedCompanies.value.includes(job.company)
+        const categoryMatch = selectedCategories.value.length === 0 || selectedCategories.value.includes(job.role_category)
+        const industryMatch = selectedIndustries.value.length === 0 || selectedIndustries.value.includes(job.industry)
+        const statusMatch = selectedStatuses.value.length === 0 || selectedStatuses.value.includes(job.application_status)
+        return companyMatch && categoryMatch && industryMatch && statusMatch
+      })
+    })
+
+    const uniqueCompanies = computed(() => [...new Set(jobs.value.map(j => j.company))])
+    const uniqueCategories = computed(() => [...new Set(jobs.value.map(j => j.role_category))])
+    const uniqueIndustries = computed(() => [...new Set(jobs.value.map(j => j.industry))])
+    const uniqueStatuses = computed(() => [...new Set(jobs.value.map(j => j.application_status))])
 </script>
 
 <template>
   <UContainer class="h-screen p-0!">
 
     <UCard 
-        class="relative bg-transparent w-1/2 h-full ring-0 shadow-none *:border-0 inline-block aling-top"
+        class="relative bg-transparent w-1/3 h-full ring-0 shadow-none *:border-0 inline-block aling-top"
         :ui="{
             body: ' pt-0!'
         }"
     >
       <template #header>
-        <h1 class="text-2xl text-text">Submit Job</h1>
+        <h1 class="text-2xl text-text uppercase">Submit Job</h1>
       </template>
 
       <form @submit.prevent="submitJob" class="">
@@ -79,33 +101,72 @@
       </form>
     </UCard>
     <UCard 
-        class="relative bg-transparent w-1/2 ring-0 shadow-none *:border-0 inline-block align-top h-screen"
+        class="relative bg-transparent w-2/3 ring-0 shadow-none *:border-0 inline-block align-top h-screen"
         :ui="{
-            body: ' pt-0!'
+            body: ' pt-0! pr-0!'
         }"
     >
         <template #header>
-            <h1 class="text-2xl text-text">Applications</h1>
+            <h1 class="text-2xl text-text uppercase">Applications</h1>
+            <div class="flex flex-wrap gap-x-4 mt-4 w-fit">
+              <USelectMenu
+                v-model="selectedCompanies"
+                :items="uniqueCompanies"
+                multiple
+                placeholder="Company"
+                class="w-fit bg-transparent ring-gray-500 text-text placeholder-gray-500"
+              />
+              <USelectMenu
+                v-model="selectedCategories"
+                :items="uniqueCategories"
+                multiple
+                placeholder="Role category"
+                class="w-fit bg-transparent ring-gray-500 text-text placeholder-gray-500"
+              />
+              <USelectMenu
+                v-model="selectedIndustries"
+                :items="uniqueIndustries"
+                multiple
+                placeholder="Industry"
+                class="w-fit bg-transparent ring-gray-500 text-text placeholder-gray-500"
+              />
+              <USelectMenu
+                v-model="selectedStatuses"
+                :items="uniqueStatuses"
+                multiple
+                placeholder="Application status"
+                class="w-fit bg-transparent ring-gray-500 text-text placeholder-gray-500"
+              />
+            </div>
         </template>
-        <div class="h-[calc(100vh_-_5.5rem)] overflow-y-auto w-full">
-            <div v-for="job in jobs" :key="job.id" class="relative flex justify-between items-center py-4 border-b border-gray-200">
+        <div class="h-[calc(100vh_-8.5rem)] overflow-y-auto w-full pr-4">
+            
+            <div v-for="job in filteredJobs" :key="job.id" class="relative flex justify-between items-center py-4 border-b border-gray-200">
                 <div class="text-text w-3/4 inline-block">
                     <p>{{ job.title }}</p>
                     <p class="text-gray-500 text-sm">{{ job.company }}</p>
-                    <p class="text-gray-500 text-sm">{{ job.location }}</p>
+                    <div class="text-gray-500 text-sm mt-2"><LucideMapPin :size="15" class="inline-block align-middle mr-1" /><p class="inline-block align-middle">{{ job.location }}</p></div>
                 </div>
                 
-                <USelect
-                v-model="job.application_status"
-                :items="[
-                    { label: 'In Review', value: 'In Review' },
-                    { label: 'In Progress', value: 'In Progress' },
-                    { label: 'Refused', value: 'Refused' },
-                    { label: 'Accepted', value: 'Accepted' }
-                ]"
-                @change="status => updateStatus(job.id, job.application_status)"
-                class="absolute top-4 right-0 w-1/4 inline-block align-top bg-transparent *ring-gray-500 *text-text *placeholder-gray-500"
-                />
+                <div>
+                  <USelect
+                    v-model="job.application_status"
+                    :items="[
+                      { label: 'In Review', value: 'In Review' },
+                      { label: 'In Progress', value: 'In Progress' },
+                      { label: 'Refused', value: 'Refused' },
+                      { label: 'Accepted', value: 'Accepted' }
+                    ]"
+                    @change="status => updateStatus(job.id, job.application_status)"
+                    :class="[
+                      'absolute top-4 right-0 w-1/4 inline-block align-top bg-transparent ring-gray-500 text-text placeholder-gray-500',
+                      job.application_status === 'Accepted' && 'text-green-500',
+                      job.application_status === 'Refused' && 'text-red-500',
+                      job.application_status === 'In Review' && 'text-orange-400',
+                      job.application_status === 'In Progress' && 'text-lime-500'
+                    ]"
+                  />
+                </div>
                 
             </div>
         </div>
