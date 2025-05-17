@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme {
+    --color-primary: #282828;
+    --color-secondary: #f8f8f8;
+    --color-accent: #fbbf24;
+    --color-background: #212121;
+    --color-text: #e9e9e9;
+}
+
+html, body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--color-background);
+    color: var(--color-text);
+    width: 100vw;
+    height: 100vh;
+}
