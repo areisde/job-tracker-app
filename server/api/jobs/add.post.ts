@@ -97,7 +97,8 @@ export default defineEventHandler(async (event) => {
     date_applied: dayjs().format("YYYY-MM-DD"),
     job_link: job.link || "",
     application_status: "In Review",
-    interviews: 0
+    interviews: 0,
+    date_last_contact: dayjs().format("YYYY-MM-DD")
   }
 
   const { data, error } = await supabase

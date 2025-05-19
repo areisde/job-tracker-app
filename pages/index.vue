@@ -19,6 +19,15 @@
       })
     }
 
+    const updateLastContactDate = async (id) => {
+      await $fetch(`/api/jobs/${id}`, {
+        method: 'PATCH',
+        body: { date_last_contact: new Date().toISOString() }
+      })
+      fetchJobs()
+
+    }
+
     onMounted(fetchJobs)
 
     const submitJob = async () => {
@@ -88,9 +97,40 @@ const statusStats = computed(() => {
 
   return Object.entries(counts).map(([status, count]) => ({
     status,
-    percent: total ? (count / total) * 100 : 0
+    //percent: total ? (count / total) * 100 : 0
+    percent : total ? count : 0
   }))
 })
+
+
+function getAppliedText(job) {
+  /*const delay = Math.floor(
+    (new Date(job.date_applied) - new Date(job.date_added)) / (1000 * 60 * 60 * 24)
+  )
+
+  if (delay <= 0) {
+    return "Applied on the same day"
+  } else if (delay === -1) {
+    return "Applied on the same day"
+  } else if (delay === 1) {
+    return "Applied 1 day after post"
+  } else {
+    return `Applied ${delay} days after post`
+  }*/
+
+  const lastContactDate = new Date(job.date_last_contact + "T00:00:00")
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const applied = Math.floor((today - lastContactDate) / (1000 * 60 * 60 * 24))
+
+  return applied
+}
+
+const getStatusLength = (status) => {
+    console.log(status)
+    return (status / jobs.value.length) * 100
+}
+
 </script>
 
 <template>
@@ -127,7 +167,7 @@ const statusStats = computed(() => {
         }"
     >
         <template #header>
-            <h1 class="text-2xl text-text uppercase">Applications</h1>
+            <h1 class="text-2xl text-text uppercase">Applications - {{ filteredJobs.length }} results</h1>
             <div class="flex flex-wrap gap-x-4 mt-4 w-fit">
               <USelectMenu
                 v-model="selectedCompanies"
@@ -166,6 +206,22 @@ const statusStats = computed(() => {
                     <p>{{ job.title }}</p>
                     <p class="text-gray-500 text-sm">{{ job.company }}</p>
                     <div class="text-gray-500 text-sm mt-2"><LucideMapPin :size="15" class="inline-block align-middle mr-1" /><p class="inline-block align-middle">{{ job.location }}</p></div>
+                    <p v-if="job.recruiter" class="text-sm mt-4">Recruiter : <span class="bg-gray-200/50 p-2 w-fit rounded-sm">{{ job.recruiter }}</span></p>
+                    <p class="text-sm mt-4">
+                        <span v-if="getAppliedText(job) === 0 || getAppliedText(job) === -1">
+                            Last contacted / applied today
+                        </span>
+                        <span v-else-if="getAppliedText(job) === 1">
+                            Last contacted / applied 1 day ago
+                        </span>
+                        <span v-else-if="getAppliedText(job) > 1 && getAppliedText(job) < 7" class="text-orange-400">
+                            Last contacted / applied {{ getAppliedText(job) }} days ago
+                        </span>
+                        <span v-else class="text-red-500">
+                            Last contacted / applied {{ getAppliedText(job) }} days ago
+                        </span>
+                    </p>
+                    <UButton v-if="getAppliedText(job) > 1" @click="updateLastContactDate(job.id)" class="text-white cursor-pointer mt-2" >Followed up</UButton>
                 </div>
                 
                 <div>
@@ -197,7 +253,7 @@ const statusStats = computed(() => {
             :title="`${stat.status}: ${stat.percent.toFixed(0)}%`"
             class="h-full transition-all duration-300 overflow-hidden"
             :style="{
-              width: `${stat.percent}%`,
+              width: `${getStatusLength(stat.percent)}%`,
               backgroundColor:
                 stat.status === 'Accepted' ? '#22c55e' :
                 stat.status === 'In Progress' ? '#a3e635' :
@@ -205,7 +261,7 @@ const statusStats = computed(() => {
                 stat.status === 'Refused' ? '#ef4444' : '#d1d5db'
             }"
           >
-            <p class="w-full text-center">{{ stat.percent.toFixed(0) }}%</p>
+            <p class="w-full text-center">{{ stat.percent.toFixed(0) }}</p>
           </div>
         </div>
     </UCard>
